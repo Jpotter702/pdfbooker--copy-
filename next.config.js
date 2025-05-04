@@ -5,9 +5,6 @@ const nextConfig = {
   images: {
     domains: ['example.com'], // Add domains for remote images
   },
-  experimental: {
-    serverActions: true,
-  },
 };
 
 module.exports = nextConfig;
