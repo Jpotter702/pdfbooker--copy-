@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import * as z from "zod";
-import { ArrowRight, Download, Loader2, Settings2 } from "lucide-react";
+import { ArrowRight, Download, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,17 +23,19 @@ const formSchema = z.object({
   url: z.string().url("Please enter a valid URL"),
   depth: z.number().min(1).max(5),
   template: z.string(),
-  includeImages: z.boolean().default(true),
-  includeTables: z.boolean().default(true),
-  includeCode: z.boolean().default(true),
+  includeImages: z.boolean(),
+  includeTables: z.boolean(),
+  includeCode: z.boolean(),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export function PDFForm() {
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       url: "",
@@ -45,7 +47,7 @@ export function PDFForm() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit: SubmitHandler<FormValues> = async (values) => {
     setIsProcessing(true);
     setProgress(0);
     
@@ -76,7 +78,7 @@ export function PDFForm() {
         description: "Something went wrong while generating your PDF. Please try again.",
       });
     }
-  }
+  };
 
   return (
     <Card className="w-full max-w-3xl mx-auto">
@@ -125,7 +127,7 @@ export function PDFForm() {
                           max={5}
                           step={1}
                           value={[field.value]}
-                          onValueChange={(value) => field.onChange(value[0])}
+                          onValueChange={(value: number[]) => field.onChange(value[0])}
                         />
                       </FormControl>
                       <FormDescription>
