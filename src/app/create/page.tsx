@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/main-layout";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/app/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@/app/components/ui/progress";
 import { BookIcon, GlobeIcon } from "lucide-react";
 
 export default function CreatePage() {

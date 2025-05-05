@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { MainLayout } from "@/components/layout/main-layout";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { BookIcon, SearchIcon, PlusCircleIcon } from "lucide-react";

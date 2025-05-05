@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { BookIcon } from "lucide-react";
 
 import { ModeToggle } from "@/components/mode-toggle";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/app/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function SiteHeader() {

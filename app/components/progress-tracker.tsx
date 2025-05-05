@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Progress } from "@/components/ui/progress";
-import { Stepper } from "@/components/ui/stepper";
-import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useToast } from "@/components/ui/use-toast";
+import { Progress } from "./ui/progress";
+import { Stepper } from "./ui/stepper";
+import { Badge } from "./ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { useToast } from "./ui/use-toast";
 import { cn } from "@/lib/utils";
 
 interface ProgressStage {
