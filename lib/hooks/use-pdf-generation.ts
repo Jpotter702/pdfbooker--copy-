@@ -1,42 +1,96 @@
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { pdfApi, GeneratePDFRequest } from '@/lib/api-client';
+import { useState, useCallback, useEffect } from 'react';
+import { GeneratePDFRequest } from '@/lib/api-client';
 import { useToast } from '@/components/ui/use-toast';
 
+export interface PDFGenerationProgress {
+  progress: number;
+  message: string;
+}
+
 export function usePDFGeneration() {
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState<PDFGenerationProgress>({ progress: 0, message: '' });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [eventSource, setEventSource] = useState<EventSource | null>(null);
   const { toast } = useToast();
 
-  const mutation = useMutation({
-    mutationFn: async (data: GeneratePDFRequest) => {
-      setIsGenerating(true);
-      setProgress(0);
+  // Clean up event source on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [eventSource]);
 
-      // Set up progress tracking
-      const eventSource = pdfApi.getProgress(data.url);
-      eventSource.onmessage = (event) => {
-        const { progress, message } = JSON.parse(event.data);
-        setProgress(progress);
-        if (progress === 100) {
-          eventSource.close();
+  const generatePDF = useCallback(async (data: GeneratePDFRequest) => {
+    try {
+      // Reset state
+      setIsGenerating(true);
+      setProgress({ progress: 0, message: 'Initializing...' });
+      setError(null);
+      
+      // Close any existing event source
+      if (eventSource) {
+        eventSource.close();
+      }
+
+      // Set up progress tracking with SSE
+      const newEventSource = new EventSource(`/api/generate-pdf/progress?url=${encodeURIComponent(data.url)}`);
+      setEventSource(newEventSource);
+
+      newEventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setProgress({
+            progress: data.progress,
+            message: data.message
+          });
+
+          // Close event source when done
+          if (data.progress === 100) {
+            newEventSource.close();
+          }
+        } catch (err) {
+          console.error('Error parsing SSE data:', err);
         }
       };
 
-      try {
-        const blob = await pdfApi.generatePDF(data);
-        return blob;
-      } finally {
-        setIsGenerating(false);
-        eventSource.close();
+      newEventSource.onerror = (err) => {
+        console.error('SSE connection error:', err);
+        newEventSource.close();
+        setEventSource(null);
+        setError(new Error('Error tracking PDF generation progress'));
+      };
+
+      // Create form data for the request
+      const formData = new FormData();
+      formData.append('url', data.url);
+      formData.append('depth', data.depth.toString());
+      formData.append('pdfConfig', JSON.stringify(data.pdfConfig));
+      
+      if (data.coverImage) {
+        formData.append('coverImage', data.coverImage);
       }
-    },
-    onSuccess: (blob) => {
+
+      // Send request to generate PDF
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate PDF: ${response.statusText}`);
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'generated.pdf';
+      a.download = `${data.pdfConfig.title || 'generated'}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -44,22 +98,38 @@ export function usePDFGeneration() {
 
       toast({
         title: 'PDF Generated',
-        description: 'Your PDF has been generated successfully.',
+        description: 'Your PDF has been generated and downloaded successfully.',
       });
-    },
-    onError: (error) => {
+
+      return blob;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Unknown error occurred');
+      setError(error);
       toast({
         title: 'Error',
-        description: 'Failed to generate PDF. Please try again.',
+        description: error.message || 'Failed to generate PDF. Please try again.',
         variant: 'destructive',
       });
-    },
-  });
+      throw error;
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [eventSource, toast]);
+
+  const cancelGeneration = useCallback(() => {
+    if (eventSource) {
+      eventSource.close();
+      setEventSource(null);
+    }
+    setIsGenerating(false);
+    setProgress({ progress: 0, message: '' });
+  }, [eventSource]);
 
   return {
-    generatePDF: mutation.mutate,
+    generatePDF,
+    cancelGeneration,
     isGenerating,
     progress,
-    error: mutation.error,
+    error,
   };
 } 
