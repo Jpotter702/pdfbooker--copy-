@@ -1,123 +1,35 @@
 "use client";
 
-import { PDFCustomizationForm } from "./components/pdf-customization-form";
-import { ProgressTracker } from "./components/progress-tracker";
-import { useState } from "react";
-import { Toaster } from "./components/ui/toaster";
-import { type FormValues } from "./components/pdf-customization-form";
-
-type Stage = {
-  id: string;
-  label: string;
-  description: string;
-  status: "pending" | "in-progress" | "completed" | "error";
-  progress: number;
-  details?: string;
-};
+import { Navigation } from "./components/navigation";
 
 export default function Home() {
-  const [stages, setStages] = useState<Stage[]>([
-    {
-      id: "init",
-      label: "Initialization",
-      description: "Setting up PDF generation",
-      status: "pending",
-      progress: 0,
-    },
-    {
-      id: "processing",
-      label: "Processing",
-      description: "Generating PDF content",
-      status: "pending",
-      progress: 0,
-    },
-    {
-      id: "finalization",
-      label: "Finalization",
-      description: "Finalizing PDF document",
-      status: "pending",
-      progress: 0,
-    },
-  ]);
-
-  const [currentStage, setCurrentStage] = useState(0);
-  const [overallProgress, setOverallProgress] = useState(0);
-
-  const handlePDFGeneration = async (values: FormValues) => {
-    // Update initialization stage
-    setStages((prev) =>
-      prev.map((stage) =>
-        stage.id === "init"
-          ? { ...stage, status: "in-progress", progress: 50 }
-          : stage
-      )
-    );
-    setOverallProgress(10);
-
-    // Simulate processing
-    setTimeout(() => {
-      setStages((prev) =>
-        prev.map((stage) =>
-          stage.id === "init"
-            ? { ...stage, status: "completed", progress: 100 }
-            : stage.id === "processing"
-            ? { ...stage, status: "in-progress", progress: 30 }
-            : stage
-        )
-      );
-      setCurrentStage(1);
-      setOverallProgress(40);
-    }, 2000);
-
-    // Simulate completion
-    setTimeout(() => {
-      setStages((prev) =>
-        prev.map((stage) =>
-          stage.id === "processing"
-            ? { ...stage, status: "completed", progress: 100 }
-            : stage.id === "finalization"
-            ? { ...stage, status: "in-progress", progress: 60 }
-            : stage
-        )
-      );
-      setCurrentStage(2);
-      setOverallProgress(70);
-    }, 4000);
-
-    // Simulate finalization
-    setTimeout(() => {
-      setStages((prev) =>
-        prev.map((stage) =>
-          stage.id === "finalization"
-            ? { ...stage, status: "completed", progress: 100 }
-            : stage
-        )
-      );
-      setOverallProgress(100);
-    }, 6000);
-  };
-
   return (
-    <main className="container mx-auto p-6 space-y-8">
-      <h1 className="text-3xl font-bold">PDF Book Generator</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <h2 className="text-2xl font-semibold">Customize Your PDF</h2>
-          <PDFCustomizationForm onSubmit={handlePDFGeneration} />
-        </div>
-        
-        <div className="space-y-6">
-          <h2 className="text-2xl font-semibold">Generation Progress</h2>
-          <ProgressTracker
-            stages={stages}
-            currentStage={currentStage}
-            overallProgress={overallProgress}
-          />
+    <div className="flex min-h-screen flex-col items-center justify-start bg-blue-100 p-8">
+      <Navigation />
+      <div className="w-full max-w-4xl bg-white rounded-lg shadow-xl p-8">
+        <h1 className="text-4xl font-bold text-blue-600 mb-6">NEW PDFBooker</h1>
+        <p className="text-xl mb-8">
+          This is the NEW page. If you're seeing this, it means the routing issue is fixed!
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-blue-50 p-6 rounded-lg">
+            <h2 className="text-2xl font-semibold text-blue-800 mb-4">PDF Generation</h2>
+            <p className="mb-4">Create beautiful PDFs from any web content with just a few clicks.</p>
+            <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              Create PDF
+            </button>
+          </div>
+          <div className="bg-green-50 p-6 rounded-lg">
+            <h2 className="text-2xl font-semibold text-green-800 mb-4">Features</h2>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>Custom styling and formatting</li>
+              <li>Table of contents generation</li>
+              <li>Multiple page sizes</li>
+              <li>Content filtering</li>
+            </ul>
+          </div>
         </div>
       </div>
-      
-      <Toaster />
-    </main>
+    </div>
   );
 } 

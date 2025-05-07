@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import puppeteer, { Browser } from 'puppeteer';
 import { logger } from '../config';
 import { SCRAPING_CONFIG } from '../config';
 import { RobotsParser } from './robots-parser';
@@ -22,7 +22,7 @@ interface ScrapedPage {
 
 export class WebScraper {
   private visitedUrls: Set<string>;
-  private browser: puppeteer.Browser | null;
+  private browser: Browser | null;
   private robotsParser: RobotsParser;
   private rateLimiter: RateLimiter;
   private contentExtractor: ContentExtractor;

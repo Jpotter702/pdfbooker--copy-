@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookIcon } from "lucide-react";
 
-import { ModeToggle } from "@/components/mode-toggle";
-import { Button } from "@/app/components/ui/button";
-import { cn } from "@/lib/utils";
+import { ModeToggle } from "@/src/components/mode-toggle";
+import { Button } from "@/src/components/ui/button";
+import { cn } from "@/src/lib/utils";
 
 export function SiteHeader() {
   const pathname = usePathname();

@@ -1,52 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookIcon, FileIcon, MoreVertical, PlusIcon } from "lucide-react";
-import { PDFCreatorModal } from "@/components/pdf-creator-modal";
-
-// Mock data for PDF books
-const mockPDFBooks = [
-  {
-    id: "1",
-    title: "React Documentation",
-    sourceUrl: "https://reactjs.org",
-    createdAt: new Date("2023-05-15"),
-    status: "completed",
-  },
-  {
-    id: "2",
-    title: "Next.js Documentation",
-    sourceUrl: "https://nextjs.org",
-    createdAt: new Date("2023-06-20"),
-    status: "completed",
-  },
-  {
-    id: "3",
-    title: "MDN Web Docs",
-    sourceUrl: "https://developer.mozilla.org",
-    createdAt: new Date("2023-07-10"),
-    status: "processing",
-  },
-];
+import { BookIcon, FileIcon, MoreVertical, PlusIcon, Loader2 } from "lucide-react";
+import { Navigation } from "../components/navigation";
+import { PDFCreatorModal } from "@/components/pdf-creator/pdf-creator-modal";
+import { usePDFList } from "@/lib/hooks/use-pdf-list";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Use the PDF list hook to fetch and manage PDFs
+  const { pdfs, isLoading: isPDFsLoading, error, refreshPDFs, downloadPDF, deletePDF } = usePDFList();
 
-  // If not authenticated, redirect to sign in
-  if (status === "unauthenticated") {
-    router.push("/auth/signin");
-    return null;
-  }
+  useEffect(() => {
+    // Wait for the session status to be determined
+    if (status !== "loading") {
+      setIsLoading(false);
+      // No need to redirect - let users view the page without login for now
+    }
+  }, [status, router]);
 
-  if (status === "loading") {
+  if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
@@ -56,15 +39,19 @@ export default function Dashboard() {
 
   const closeCreator = () => {
     setIsCreatorOpen(false);
+    // Refresh the PDF list after closing the creator
+    refreshPDFs();
   };
 
   return (
     <div className="container py-10">
+      <Navigation />
+      
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back, {session?.user?.name || "User"}
+            Welcome back, {session?.user?.name || "Guest User"}
           </p>
         </div>
         <Button onClick={openCreator} className="flex items-center gap-2">
@@ -79,56 +66,91 @@ export default function Dashboard() {
           <TabsTrigger value="completed">Completed</TabsTrigger>
           <TabsTrigger value="processing">Processing</TabsTrigger>
         </TabsList>
+        
         <TabsContent value="all" className="mt-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {mockPDFBooks.map((book) => (
-              <Card key={book.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg font-medium">{book.title}</CardTitle>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Download</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Share</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <CardDescription className="truncate">
-                    {book.sourceUrl}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className={`inline-flex px-2 py-1 rounded-full text-xs ${
-                      book.status === "completed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                    }`}>
-                      {book.status === "completed" ? "Completed" : "Processing"}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {book.createdAt.toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full" disabled={book.status !== "completed"}>
-                    <FileIcon className="mr-2 h-4 w-4" />
-                    {book.status === "completed" ? "View PDF" : "Processing..."}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+          {isPDFsLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Loading PDFs...</span>
+            </div>
+          ) : error ? (
+            <div className="bg-destructive/10 rounded-md p-6 text-center">
+              <h3 className="font-medium text-destructive mb-2">Error loading PDFs</h3>
+              <p>{error.message}</p>
+              <Button 
+                variant="outline" 
+                className="mt-4" 
+                onClick={() => refreshPDFs()}
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : pdfs.length === 0 ? (
+            <div className="text-center py-10 bg-muted/40 rounded-md">
+              <BookIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-medium mb-2">No PDFs yet</h3>
+              <p className="text-muted-foreground mb-4">Create your first PDF book from any website!</p>
+              <Button onClick={openCreator}>Create PDF Book</Button>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {pdfs.map((book) => (
+                <Card key={book.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-lg font-medium">{book.title}</CardTitle>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => downloadPDF(book.id)}>
+                            Download
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600" onClick={() => deletePDF(book.id)}>
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <CardDescription className="truncate">
+                      {book.sourceUrl}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs ${
+                        book.status === "completed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                      }`}>
+                        {book.status === "completed" ? "Completed" : "Processing"}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {new Date(book.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      disabled={book.status !== "completed"}
+                      onClick={() => downloadPDF(book.id)}
+                    >
+                      <FileIcon className="mr-2 h-4 w-4" />
+                      {book.status === "completed" ? "View PDF" : "Processing..."}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
+        
         <TabsContent value="completed" className="mt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {mockPDFBooks.filter(book => book.status === "completed").map((book) => (
+            {pdfs.filter(book => book.status === "completed").map((book) => (
               <Card key={book.id}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
@@ -140,10 +162,12 @@ export default function Dashboard() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Download</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Share</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => downloadPDF(book.id)}>
+                          Download
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600" onClick={() => deletePDF(book.id)}>
+                          Delete
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -157,12 +181,16 @@ export default function Dashboard() {
                       Completed
                     </span>
                     <span className="text-muted-foreground">
-                      {book.createdAt.toLocaleDateString()}
+                      {new Date(book.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => downloadPDF(book.id)}
+                  >
                     <FileIcon className="mr-2 h-4 w-4" />
                     View PDF
                   </Button>
@@ -171,9 +199,10 @@ export default function Dashboard() {
             ))}
           </div>
         </TabsContent>
+        
         <TabsContent value="processing" className="mt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {mockPDFBooks.filter(book => book.status === "processing").map((book) => (
+            {pdfs.filter(book => book.status === "processing").map((book) => (
               <Card key={book.id}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
@@ -199,7 +228,7 @@ export default function Dashboard() {
                       Processing
                     </span>
                     <span className="text-muted-foreground">
-                      {book.createdAt.toLocaleDateString()}
+                      {new Date(book.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </CardContent>

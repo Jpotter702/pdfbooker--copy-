@@ -1,3 +1,5 @@
+"use client"
+
 // This file is based on shadcn/ui toast component
 // https://ui.shadcn.com/docs/components/toast
 
@@ -9,13 +11,15 @@ import type {
 } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 5000;
 
-type ToasterToast = ToastProps & {
+type ToasterToast = {
   id: string;
-  title?: React.ReactNode;
-  description?: React.ReactNode;
-  action?: ToastActionElement;
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
+  onClose?: () => void;
+  variant?: "default" | "destructive";
 };
 
 const actionTypes = {
@@ -28,7 +32,7 @@ const actionTypes = {
 let count = 0;
 
 function genId() {
-  count = (count + 1) % Number.MAX_VALUE;
+  count = (count + 1) % Number.MAX_SAFE_INTEGER;
   return count.toString();
 }
 
@@ -41,15 +45,15 @@ type Action =
     }
   | {
       type: ActionType["UPDATE_TOAST"];
-      toast: Partial<ToasterToast>;
+      toast: Partial<ToasterToast> & { id: string };
     }
   | {
       type: ActionType["DISMISS_TOAST"];
-      toastId?: string;
+      toastId: string;
     }
   | {
       type: ActionType["REMOVE_TOAST"];
-      toastId?: string;
+      toastId: string;
     };
 
 interface State {
@@ -77,29 +81,19 @@ const reducer = (state: State, action: Action): State => {
     case actionTypes.DISMISS_TOAST: {
       const { toastId } = action;
 
-      if (toastId) {
-        toastTimeouts.set(
-          toastId,
-          setTimeout(() => {
-            toastTimeouts.delete(toastId);
-          }, TOAST_REMOVE_DELAY)
-        );
+      if (toastTimeouts.has(toastId)) {
+        clearTimeout(toastTimeouts.get(toastId));
+        toastTimeouts.delete(toastId);
       }
 
       return {
         ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === toastId || toastId === undefined
-            ? {
-                ...t,
-                open: false,
-              }
-            : t
-        ),
+        toasts: state.toasts.filter((t) => t.id !== toastId),
       };
     }
+
     case actionTypes.REMOVE_TOAST:
-      if (action.toastId === undefined) {
+      if (action.toastId === "all") {
         return {
           ...state,
           toasts: [],
@@ -133,6 +127,7 @@ function toast({ ...props }: Toast) {
       type: actionTypes.UPDATE_TOAST,
       toast: { ...props, id },
     });
+
   const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
 
   dispatch({
@@ -140,10 +135,7 @@ function toast({ ...props }: Toast) {
     toast: {
       ...props,
       id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss();
-      },
+      onClose: dismiss,
     },
   });
 
@@ -170,7 +162,7 @@ function useToast() {
   return {
     ...state,
     toast,
-    dismiss: (toastId?: string) => dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
+    dismiss: (toastId: string) => dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
   };
 }
 

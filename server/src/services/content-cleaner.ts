@@ -20,11 +20,7 @@ interface CleanedContent {
 }
 
 export class ContentCleaner {
-  private readonly readability: Readability;
-
-  constructor() {
-    this.readability = new Readability({} as Document);
-  }
+  constructor() {}
 
   /**
    * Cleans and extracts content from HTML
@@ -45,7 +41,8 @@ export class ContentCleaner {
       this.removeUnwantedElements(dom.window.document);
 
       // Process with Readability
-      const article = this.readability.parse(dom.window.document);
+      const reader = new Readability(dom.window.document);
+      const article = reader.parse();
 
       if (!article) {
         throw new Error('Failed to extract content with Readability');
@@ -56,7 +53,7 @@ export class ContentCleaner {
       const links = this.extractLinks(dom.window.document, url);
 
       // Normalize content
-      const normalizedContent = this.normalizeContent(article.content);
+      const normalizedContent = this.normalizeContent(article.content || '');
 
       return {
         title: article.title || '',

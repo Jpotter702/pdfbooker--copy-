@@ -1,0 +1,17 @@
+Current Error Handling (from app/auth/signin/page.tsx)
+Email/Password:
+If the credentials are invalid, the error message “Invalid credentials” is shown below the form.
+The sign-in button shows a loading state (“Signing in...”) while the request is in progress.
+If the sign-in fails for any reason (e.g., network error, server error), the error message is displayed.
+OAuth (GitHub/Google):
+There is no explicit error handling for OAuth sign-in in the UI.
+If OAuth fails (e.g., user cancels, provider error), NextAuth will redirect back to the sign-in page, but the error is not surfaced to the user.
+Suggestions for Improved Error Handling
+OAuth Error Feedback:
+NextAuth can pass error messages via query parameters (e.g., ?error=OAuthAccountNotLinked).
+The sign-in page should check for these errors and display a user-friendly message.
+General Error Handling:
+Display a generic error message for unexpected errors (e.g., network issues).
+Optionally, log errors for debugging.
+Accessibility:
+Ensure error messages are announced to screen readers (e.g., using aria-live)

@@ -1,14 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
-import { GeneratePDFRequest } from '@/lib/api-client';
+import { GeneratePDFRequest, GeneratePDFResponse } from '@/lib/api-client';
 import { useToast } from '@/components/ui/use-toast';
 
-export interface PDFGenerationProgress {
-  progress: number;
-  message: string;
-}
+export type PDFGenerationProgress = GeneratePDFResponse;
 
 export function usePDFGeneration() {
-  const [progress, setProgress] = useState<PDFGenerationProgress>({ progress: 0, message: '' });
+  const [progress, setProgress] = useState<PDFGenerationProgress>({ 
+    progress: 0, 
+    message: '', 
+    step: 'initializing'
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [eventSource, setEventSource] = useState<EventSource | null>(null);
@@ -27,7 +28,7 @@ export function usePDFGeneration() {
     try {
       // Reset state
       setIsGenerating(true);
-      setProgress({ progress: 0, message: 'Initializing...' });
+      setProgress({ progress: 0, message: 'Initializing...', step: 'initializing' });
       setError(null);
       
       // Close any existing event source
@@ -41,14 +42,31 @@ export function usePDFGeneration() {
 
       newEventSource.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-          setProgress({
-            progress: data.progress,
-            message: data.message
-          });
+          const progressData = JSON.parse(event.data) as PDFGenerationProgress;
+          setProgress(progressData);
 
-          // Close event source when done
-          if (data.progress === 100) {
+          // Show toast for important transitions
+          if (progressData.step === 'error') {
+            toast({
+              title: 'Error',
+              description: progressData.message,
+              variant: 'destructive',
+            });
+          } else if (progressData.step === 'complete') {
+            toast({
+              title: 'Success',
+              description: 'PDF generated successfully!',
+            });
+          } else if (progressData.step !== 'initializing' && progressData.progress % 25 === 0) {
+            // Show progress at 25%, 50%, 75%
+            toast({
+              title: 'Progress Update',
+              description: progressData.message,
+            });
+          }
+
+          // Close event source when done or on error
+          if (progressData.progress === 100 || progressData.step === 'error') {
             newEventSource.close();
           }
         } catch (err) {
@@ -105,6 +123,13 @@ export function usePDFGeneration() {
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error occurred');
       setError(error);
+      setProgress({
+        progress: 0,
+        message: error.message,
+        step: 'error',
+        error: error.message
+      });
+      
       toast({
         title: 'Error',
         description: error.message || 'Failed to generate PDF. Please try again.',
@@ -122,7 +147,7 @@ export function usePDFGeneration() {
       setEventSource(null);
     }
     setIsGenerating(false);
-    setProgress({ progress: 0, message: '' });
+    setProgress({ progress: 0, message: '', step: 'initializing' });
   }, [eventSource]);
 
   return {

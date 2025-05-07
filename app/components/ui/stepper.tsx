@@ -1,55 +1,70 @@
 "use client";
 
 import * as React from "react";
+import { CheckIcon, CircleIcon } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 
-interface Step {
-  id: string;
-  label: string;
-  description?: string;
-}
-
 interface StepperProps {
-  steps: Step[];
+  steps: {
+    id: string;
+    label: string;
+    description?: string;
+  }[];
   currentStep: number;
   className?: string;
 }
 
 export function Stepper({ steps, currentStep, className }: StepperProps) {
   return (
-    <div className={cn("flex w-full", className)}>
-      {steps.map((step, index) => (
-        <React.Fragment key={step.id}>
-          <div className="flex flex-col items-center">
+    <div className={cn("flex flex-col gap-2", className)}>
+      <ol className="overflow-hidden">
+        {steps.map((step, index) => (
+          <li
+            key={step.id}
+            className={cn(
+              "relative flex items-center pb-8 last:pb-0",
+              "after:absolute after:left-3.5 after:top-[calc(50%_+_16px)] after:h-full after:w-px after:bg-muted last:after:hidden"
+            )}
+          >
             <div
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full border-2",
-                index <= currentStep
+                "relative z-10 flex h-7 w-7 items-center justify-center rounded-full border",
+                index < currentStep
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "border-muted-foreground/25"
+                  : index === currentStep
+                  ? "border-primary border-2 bg-background"
+                  : "border-muted bg-muted"
               )}
             >
-              {index + 1}
-            </div>
-            <div className="mt-2 text-sm font-medium">{step.label}</div>
-            {step.description && (
-              <div className="mt-1 text-xs text-muted-foreground">
-                {step.description}
-              </div>
-            )}
-          </div>
-          {index < steps.length - 1 && (
-            <div
-              className={cn(
-                "mx-4 flex-1 border-t-2",
-                index < currentStep
-                  ? "border-primary"
-                  : "border-muted-foreground/25"
+              {index < currentStep ? (
+                <CheckIcon className="h-4 w-4" />
+              ) : (
+                <CircleIcon className="h-4 w-4 fill-current" />
               )}
-            />
-          )}
-        </React.Fragment>
-      ))}
+            </div>
+            <div className="ml-4 pb-2">
+              <h3
+                className={cn(
+                  "text-sm font-medium leading-tight",
+                  index <= currentStep ? "text-foreground" : "text-muted-foreground"
+                )}
+              >
+                {step.label}
+              </h3>
+              {step.description && (
+                <p
+                  className={cn(
+                    "text-xs",
+                    index <= currentStep ? "text-muted-foreground" : "text-muted"
+                  )}
+                >
+                  {step.description}
+                </p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 } 

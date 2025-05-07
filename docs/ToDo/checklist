@@ -1,0 +1,30 @@
+Frontend Authentication Checklist
+1. Sign-In/Sign-Up UI
+[ ] A dedicated sign-in page (e.g., /auth/signin)
+[ ] Buttons for OAuth providers (Google, GitHub)
+[ ] (Optional) Email/password form if required by requirements
+[ ] Clear branding and project name/logo
+2. NextAuth Integration
+[ ] NextAuth configured with all required providers
+[ ] Sign-in page uses signIn() from next-auth/react
+[ ] Handles redirect after successful login
+3. User Feedback
+[ ] Loading indicator during authentication
+[ ] Error messages for failed logins (e.g., invalid credentials, OAuth errors)
+[ ] Success message or redirect on successful login
+4. Session Awareness
+[ ] Show user info (avatar, name, email) when logged in (e.g., in navbar or dashboard)
+[ ] Show sign-in/sign-up options when logged out
+[ ] Sign-out button that calls signOut() from next-auth/react
+5. Accessibility & UX
+[ ] All buttons and forms are keyboard accessible
+[ ] Proper ARIA labels for form fields and buttons
+[ ] Responsive design for mobile and desktop
+6. Security
+[ ] No sensitive data in client-side code
+[ ] No userId or tokens stored in localStorage (NextAuth handles this securely)
+[ ] Only show authenticated content to logged-in users
+7. Testing
+[ ] Test login with each OAuth provider
+[ ] Test error states (invalid login, canceled OAuth, etc.)
+[ ] Test sign-out and session expiration

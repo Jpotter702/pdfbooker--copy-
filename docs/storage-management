@@ -1,0 +1,32 @@
+Storage Management Requirements (from your docs)
+Store generated PDFs per user.
+Implement cleanup and deletion.
+What’s Already Implemented
+Per-user storage:
+Your backend (server.ts) saves PDFs in a user-specific directory (using userId).
+Metadata is stored alongside each PDF.
+Deletion:
+There is an endpoint to delete PDFs (DELETE /api/pdfs/:id), which removes both the PDF and its metadata.
+What’s Missing / Next Steps
+User Authentication Enforcement
+Ensure only the authenticated user can access/delete their own PDFs (not just by passing userId).
+This ties into the authentication work discussed earlier.
+Storage Limits & Cleanup
+File size limits: Prevent users from uploading or generating excessively large PDFs.
+Automatic cleanup: Implement policies for deleting old or unused PDFs (e.g., after X days, or when storage quota is exceeded).
+Manual cleanup: Allow users to delete their own PDFs from the dashboard (already present).
+Storage Quotas (Optional)
+Set a maximum storage quota per user and enforce it.
+Compression (Optional)
+Compress PDFs to save space.
+Actionable Next Steps
+Enforce authentication on all storage-related endpoints.
+Implement file size checks when saving PDFs.
+Add a scheduled job or script to clean up old PDFs (e.g., using node-cron or a similar tool).
+(Optional) Track and enforce per-user storage quotas.
+Would you like to:
+Start with file size limits and cleanup logic?
+Add scheduled cleanup for old PDFs?
+Implement/enforce per-user storage quotas?
+Or review the current deletion/cleanup code for improvements?
+Let me know which aspect of storage management you want to tackle first, and I’ll provide a step-by-step plan or code!

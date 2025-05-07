@@ -137,14 +137,19 @@ export class ContentExtractor {
     return $main.text().trim();
   }
 
-  private cleanContent($elem: cheerio.Cheerio<cheerio.Element>): void {
+  private cleanContent($elem: cheerio.Cheerio<any>): void {
     // Remove empty elements
     $elem.find(':empty').not('img, br, hr, input, textarea').remove();
 
     // Normalize whitespace
     $elem.find('*').each((_, elem) => {
-      if (elem.type === 'text') {
-        elem.data = elem.data.replace(/\s+/g, ' ').trim();
+      const contents = (elem as any).children?.filter((child: any) => 
+        child.type === 'text' && typeof child.data === 'string'
+      );
+      if (contents && contents.length > 0) {
+        for (const content of contents) {
+          content.data = content.data.replace(/\s+/g, ' ').trim();
+        }
       }
     });
   }
