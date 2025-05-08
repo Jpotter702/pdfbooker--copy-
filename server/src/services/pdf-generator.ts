@@ -1,6 +1,28 @@
 import PDFDocument from 'pdfkit';
 import { JSDOM } from 'jsdom';
 import { logger } from '../utils/logger';
+import fs from 'fs';
+
+// Utility: Replace template variables in a string
+function replaceTemplateVars(template: string, vars: Record<string, any>) {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) =>
+    vars[key] !== undefined ? String(vars[key]) : ''
+  );
+}
+
+// Utility: Try to load a font, fallback to system font if missing
+function getFontOrFallback(doc: PDFKit.PDFDocument, fontPath: string, fallback: string = 'Helvetica') {
+  try {
+    if (fs.existsSync(fontPath)) {
+      doc.font(fontPath);
+      return fontPath;
+    }
+  } catch (e) {
+    logger.warn(`Font not found: ${fontPath}, falling back to ${fallback}`);
+  }
+  doc.font(fallback);
+  return fallback;
+}
 
 interface PDFConfig {
   pageSize: 'A4' | 'A5' | 'Letter';
@@ -25,6 +47,9 @@ interface PDFConfig {
     showPageNumbers: boolean;
     showHeaders: boolean;
     showFooters: boolean;
+    headerTemplate?: string;
+    footerTemplate?: string;
+    logoPath?: string;
   };
   metadata: {
     title: string;
@@ -51,6 +76,7 @@ interface OrganizedContent {
 
 export class PDFGenerator {
   private readonly config: PDFConfig;
+  private templateCache: Record<string, string> = {};
 
   constructor(config?: Partial<PDFConfig>) {
     this.config = {
@@ -76,6 +102,9 @@ export class PDFGenerator {
         showPageNumbers: true,
         showHeaders: true,
         showFooters: true,
+        headerTemplate: undefined,
+        footerTemplate: undefined,
+        logoPath: undefined,
       },
       metadata: {
         title: 'Generated PDF',
@@ -90,6 +119,11 @@ export class PDFGenerator {
    * @returns PDF buffer
    */
   public async generate(content: OrganizedContent): Promise<Buffer> {
+    // Background processing for large documents (scaffold only)
+    if (content.pages.length > 100) {
+      logger.info('Large document detected, would offload to background worker.');
+      // TODO: Implement real background job system
+    }
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument({
@@ -204,7 +238,7 @@ export class PDFGenerator {
   }
 
   /**
-   * Generates content pages
+   * Generates content pages with dynamic header/footer and logo scaling
    * @param doc PDF document
    * @param content Organized content
    */
@@ -212,16 +246,28 @@ export class PDFGenerator {
     doc: PDFKit.PDFDocument,
     content: OrganizedContent
   ): void {
+    const { headerTemplate, footerTemplate, logoPath } = this.config.layout;
+    // Cache for processed templates (per request)
+    this.templateCache = {};
     content.pages.forEach((page, index) => {
-      // Add page header
-      this.addPageHeader(doc, page.title, index + 1, content.pages.length);
-
+      // Prepare variables for this page
+      const vars = {
+        title: page.title,
+        pageNumber: index + 1,
+        totalPages: content.pages.length,
+        date: new Date().toLocaleDateString(),
+        ...this.config.metadata,
+      };
+      // Render header
+      if (this.config.layout.showHeaders) {
+        this.renderHeader(doc, vars, headerTemplate, logoPath);
+      }
       // Process content
       this.processContent(doc, page.content, content.images);
-
-      // Add page footer
-      this.addPageFooter(doc);
-
+      // Render footer
+      if (this.config.layout.showFooters) {
+        this.renderFooter(doc, vars, footerTemplate, logoPath);
+      }
       // Add a new page if not the last page
       if (index < content.pages.length - 1) {
         doc.addPage();
@@ -230,65 +276,94 @@ export class PDFGenerator {
   }
 
   /**
-   * Adds page header
+   * Renders a dynamic header with variable replacement and logo scaling
    * @param doc PDF document
-   * @param title Page title
-   * @param pageNumber Current page number
-   * @param totalPages Total number of pages
+   * @param vars Variables for template replacement
+   * @param template Optional header template
+   * @param logoPath Optional logo path
    */
-  private addPageHeader(
+  private renderHeader(
     doc: PDFKit.PDFDocument,
-    title: string,
-    pageNumber: number,
-    totalPages: number
-  ): void {
-    if (!this.config.layout.showHeaders) return;
-
+    vars: Record<string, any>,
+    template?: string,
+    logoPath?: string
+  ) {
     const { top, left, right } = this.config.margins;
-
+    let header = template || '{{title}}';
+    // Cache processed template
+    if (!this.templateCache['header']) {
+      this.templateCache['header'] = header;
+    }
+    header = replaceTemplateVars(this.templateCache['header'], vars);
+    // Logo scaling if logoPath is provided and looks like a logo
+    if (logoPath && (logoPath.toLowerCase().includes('logo') || logoPath.endsWith('.svg') || logoPath.endsWith('.png'))) {
+      try {
+        if (fs.existsSync(logoPath)) {
+          // Max height 40px, center
+          doc.image(logoPath, doc.page.width / 2 - 40, top - 10, { fit: [80, 40], align: 'center' });
+        }
+      } catch (e) {
+        logger.warn('Logo not found or failed to load:', logoPath);
+      }
+    }
     doc
       .fontSize(10)
       .font(this.config.font)
       .fillColor(this.config.colors.headings)
-      .text(title, left, top, {
+      .text(header, left, top, {
         width: doc.page.width - left - right,
         align: 'left',
       });
-
     if (this.config.layout.showPageNumbers) {
       doc
         .fillColor(this.config.colors.text)
-        .text(`Page ${pageNumber} of ${totalPages}`, left, top, {
+        .text(`Page ${vars.pageNumber} of ${vars.totalPages}`, left, top, {
           width: doc.page.width - left - right,
           align: 'right',
         });
     }
-
     doc.moveDown(2);
   }
 
   /**
-   * Adds page footer
+   * Renders a dynamic footer with variable replacement and logo scaling
    * @param doc PDF document
+   * @param vars Variables for template replacement
+   * @param template Optional footer template
+   * @param logoPath Optional logo path
    */
-  private addPageFooter(doc: PDFKit.PDFDocument): void {
-    if (!this.config.layout.showFooters) return;
-
+  private renderFooter(
+    doc: PDFKit.PDFDocument,
+    vars: Record<string, any>,
+    template?: string,
+    logoPath?: string
+  ) {
     const { bottom, left, right } = this.config.margins;
-
+    let footer = template || 'Generated by PDFBooker';
+    // Cache processed template
+    if (!this.templateCache['footer']) {
+      this.templateCache['footer'] = footer;
+    }
+    footer = replaceTemplateVars(this.templateCache['footer'], vars);
+    // Logo scaling if logoPath is provided and looks like a logo
+    if (logoPath && (logoPath.toLowerCase().includes('logo') || logoPath.endsWith('.svg') || logoPath.endsWith('.png'))) {
+      try {
+        if (fs.existsSync(logoPath)) {
+          // Max height 40px, center
+          doc.image(logoPath, doc.page.width / 2 - 40, doc.page.height - bottom - 40, { fit: [80, 40], align: 'center' });
+        }
+      } catch (e) {
+        logger.warn('Logo not found or failed to load:', logoPath);
+      }
+    }
     doc
       .fontSize(8)
       .font(this.config.font)
       .fillColor(this.config.colors.text)
-      .text(
-        'Generated by PDFBooker',
-        left,
-        doc.page.height - bottom,
-        {
-          width: doc.page.width - left - right,
-          align: 'center',
-        }
-      );
+      .text(footer, left, doc.page.height - bottom, {
+        width: doc.page.width - left - right,
+        align: 'center',
+      });
   }
 
   /**

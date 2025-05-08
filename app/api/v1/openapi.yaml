@@ -1,0 +1,260 @@
+openapi: 3.1.0
+info:
+  title: PDFBooker Public API
+  version: 1.0.0
+  description: |
+    Versioned REST API for PDFBooker. All endpoints are under `/api/v1/`.
+    
+    **Error responses** are always in the form:
+    ```json
+    {
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "Human readable message",
+        "details": {}
+      }
+    }
+    ```
+servers:
+  - url: /api/v1
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+          required: [code, message]
+      required: [error]
+    PDF:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        url:
+          type: string
+      required: [id, name, createdAt, url]
+    PDFList:
+      type: array
+      items:
+        $ref: '#/components/schemas/PDF'
+    CrawlRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        options:
+          type: object
+      required: [url]
+    CrawlResponse:
+      type: object
+      properties:
+        pages:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              title:
+                type: string
+              preview:
+                type: string
+              metadata:
+                type: object
+            required: [url, title]
+      required: [pages]
+
+security:
+  - cookieAuth: []
+
+tags:
+  - name: PDFs
+  - name: PDF Generation
+  - name: Crawling
+  - name: Auth
+
+paths:
+  /pdfs:
+    get:
+      tags: [PDFs]
+      summary: List all PDFs for the user
+      responses:
+        '200':
+          description: List of PDFs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PDFList'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /pdfs/{id}:
+    get:
+      tags: [PDFs]
+      summary: Download a specific PDF
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [PDFs]
+      summary: Delete a specific PDF
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PDF deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /generate-pdf:
+    post:
+      tags: [PDF Generation]
+      summary: Generate a PDF from provided data
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /generate-pdf/progress:
+    get:
+      tags: [PDF Generation]
+      summary: Get PDF generation progress (SSE)
+      parameters:
+        - in: query
+          name: url
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Progress events (SSE)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /crawl:
+    post:
+      tags: [Crawling]
+      summary: Crawl a site and return metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrawlRequest'
+      responses:
+        '200':
+          description: Crawl results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrawlResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/[...nextauth]:
+    get:
+      tags: [Auth]
+      summary: NextAuth authentication endpoint
+      responses:
+        '200':
+          description: Auth response
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Auth]
+      summary: NextAuth authentication endpoint
+      responses:
+        '200':
+          description: Auth response
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error' 

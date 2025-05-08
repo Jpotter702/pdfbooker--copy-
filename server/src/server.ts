@@ -10,6 +10,7 @@ import { logger } from './utils/logger';
 import dotenv from 'dotenv';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import puppeteer from 'puppeteer';
 
 dotenv.config();
 
@@ -376,6 +377,127 @@ app.post('/api/generate-pdf', upload.single('coverImage'), async (req, res) => {
       }
     }
     res.status(500).json({ error: 'Failed to generate PDF' });
+  }
+});
+
+// Crawl API Endpoint
+app.post('/api/crawl', async (req, res) => {
+  try {
+    const { url, depth = 1, limit = 50, offset = 0 } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    const scraper = new WebScraper();
+    await scraper.initialize();
+    let scrapedPages = [];
+    let error = null;
+    try {
+      scrapedPages = await scraper.scrape(url, parseInt(depth), parseInt(limit) + parseInt(offset));
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Unknown error';
+    } finally {
+      await scraper.close();
+    }
+
+    // Build parent-child hierarchy
+    const urlToPage = new Map();
+    scrapedPages.forEach(page => urlToPage.set(page.url, page));
+    const hierarchy = {};
+    scrapedPages.forEach(page => {
+      hierarchy[page.url] = { children: [] };
+    });
+    scrapedPages.forEach(page => {
+      if (page.content && page.content.links) {
+        page.content.links.forEach(link => {
+          if (hierarchy[link]) {
+            hierarchy[page.url].children.push(link);
+            hierarchy[link].parent = page.url;
+          }
+        });
+      }
+    });
+
+    // Enhanced metadata for each page
+    const enhancedPages = await Promise.all(scrapedPages.slice(offset, offset + limit).map(async (page) => {
+      let httpStatusCode = null;
+      let lastModified = null;
+      let thumbnail = null;
+      let favicon = null;
+      let wordCount = 0;
+      let domain = null;
+      let errorMsg = page.error || null;
+      try {
+        const urlObj = new URL(page.url);
+        domain = urlObj.hostname;
+        // Try to get a screenshot thumbnail
+        if (!page.error) {
+          const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+          const p = await browser.newPage();
+          await p.goto(page.url, { waitUntil: 'networkidle2', timeout: 15000 });
+          // HTTP status code and last-modified
+          const resp = await p.goto(page.url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+          httpStatusCode = resp?.status() || null;
+          lastModified = resp?.headers()['last-modified'] || null;
+          // Screenshot
+          try {
+            thumbnail = 'data:image/png;base64,' + (await p.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 300, height: 200 } })).toString('base64');
+          } catch {
+            thumbnail = null;
+          }
+          // Favicon fallback
+          if (!thumbnail) {
+            try {
+              const faviconUrl = urlObj.origin + '/favicon.ico';
+              const favResp = await p.goto(faviconUrl, { timeout: 5000 });
+              if (favResp && favResp.ok()) {
+                const buf = await favResp.buffer();
+                favicon = 'data:image/x-icon;base64,' + buf.toString('base64');
+              }
+            } catch {
+              favicon = null;
+            }
+          }
+          await p.close();
+          await browser.close();
+        }
+        // Word count
+        if (page.content && page.content.content) {
+          wordCount = page.content.content.split(/\s+/).filter(Boolean).length;
+        }
+      } catch (err) {
+        errorMsg = errorMsg || (err instanceof Error ? err.message : 'Unknown error');
+      }
+      // Placeholder fallback
+      if (!thumbnail && !favicon) {
+        thumbnail = '/static/placeholder.png';
+      }
+      return {
+        title: (page.content?.title || '').slice(0, 60),
+        url: page.url,
+        domain,
+        httpStatusCode,
+        lastModified,
+        wordCount,
+        thumbnail: thumbnail || favicon,
+        parentUrl: hierarchy[page.url]?.parent || null,
+        childrenUrls: hierarchy[page.url]?.children || [],
+        error: errorMsg
+      };
+    }));
+
+    res.json({
+      pages: enhancedPages,
+      pagination: {
+        total: scrapedPages.length,
+        offset: parseInt(offset),
+        limit: parseInt(limit)
+      },
+      error,
+      rateLimit: null // TODO: Add real rate limit info if needed
+    });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
   }
 });
 

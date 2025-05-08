@@ -1,6 +1,7 @@
 import { JSDOM } from 'jsdom';
 import axios from 'axios';
 import { logger } from '../utils/logger';
+import sharp from 'sharp';
 
 interface ScrapedPage {
   url: string;
@@ -36,10 +37,14 @@ interface OrganizedContent {
 export class ContentOrganizer {
   private readonly imageCache: Map<string, Buffer>;
   private readonly maxImageSize: number;
+  private readonly maxImageWidth: number;
+  private readonly jpegQuality: number;
 
   constructor() {
     this.imageCache = new Map();
     this.maxImageSize = 5 * 1024 * 1024; // 5MB
+    this.maxImageWidth = 800; // px, configurable
+    this.jpegQuality = 80; // default JPEG quality
   }
 
   /**
@@ -103,33 +108,47 @@ export class ContentOrganizer {
       }
     });
 
-    // Download images in parallel
+    const urls = Array.from(imageUrls);
+    let processed = 0;
+    const total = urls.length;
+    const logStep = Math.max(1, Math.floor(total / 10));
+
+    // Download and process images in parallel
     await Promise.all(
-      Array.from(imageUrls).map(url => this.downloadImage(url))
+      urls.map(async (url, idx) => {
+        try {
+          const response = await axios.get(url, {
+            responseType: 'arraybuffer',
+            maxContentLength: this.maxImageSize,
+          });
+          if (response.status === 200) {
+            let buffer = Buffer.from(response.data);
+            // --- Image Processing Pipeline ---
+            // 1. Smart resize
+            let img = sharp(buffer).resize({ width: this.maxImageWidth, withoutEnlargement: true });
+            // 2. Strip EXIF
+            img = img.withMetadata({ exif: undefined });
+            // 3. Try WebP first
+            try {
+              buffer = await img.webp({ quality: this.jpegQuality }).toBuffer();
+            } catch (e) {
+              // 4. Fallback to JPEG with DCT compression
+              buffer = await img.jpeg({ quality: this.jpegQuality, mozjpeg: true }).toBuffer();
+            }
+            // 5. Store in cache
+            this.imageCache.set(url, buffer);
+            // 6. Memory management: release buffer
+            buffer = undefined as any;
+          }
+        } catch (error) {
+          logger.warn(`Failed to download or process image: ${url}`, error);
+        }
+        processed++;
+        if (processed % logStep === 0 || processed === total) {
+          logger.info(`Image processing progress: ${processed}/${total}`);
+        }
+      })
     );
-  }
-
-  /**
-   * Downloads a single image
-   * @param url Image URL
-   */
-  private async downloadImage(url: string): Promise<void> {
-    if (this.imageCache.has(url)) {
-      return;
-    }
-
-    try {
-      const response = await axios.get(url, {
-        responseType: 'arraybuffer',
-        maxContentLength: this.maxImageSize,
-      });
-
-      if (response.status === 200) {
-        this.imageCache.set(url, Buffer.from(response.data));
-      }
-    } catch (error) {
-      logger.warn(`Failed to download image: ${url}`, error);
-    }
   }
 
   /**
