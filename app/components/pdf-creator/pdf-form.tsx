@@ -614,57 +614,58 @@ export function PDFForm() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="depth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Crawl Depth</FormLabel>
-                      <FormControl>
-                        <Slider
-                          min={1}
-                          max={10}
-                          step={1}
-                          value={[field.value]}
-                          onValueChange={([value]) => field.onChange(value)}
-                          disabled={isGenerating}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Current depth: {field.value}
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="depth"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Crawl Depth</FormLabel>
+                        <FormControl>
+                          <Slider
+                            min={1}
+                            max={10}
+                            step={1}
+                            value={[field.value]}
+                            onValueChange={([value]) => field.onChange(value)}
+                            disabled={isGenerating}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Current depth: {field.value}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <Button type="submit" disabled={isGenerating}>
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating ({progress}%)
-                    </>
-                  ) : (
-                    'Generate PDF'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </TabsContent>
-          <TabsContent value="advanced">
-            <PDFCustomizationForm
-              onSave={(values) => {
-                form.setValue('pdfConfig', values);
-                toast({
-                  title: 'Settings saved',
-                  description: 'Your PDF customization settings have been saved.',
-                });
-              }}
-              initialValues={form.getValues('pdfConfig')}
-            />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+                  <Button type="submit" disabled={isGenerating}>
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating ({progress}%)
+                      </>
+                    ) : (
+                      'Generate PDF'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
+            <TabsContent value="advanced">
+              <PDFCustomizationForm
+                onSave={(values) => {
+                  form.setValue('pdfConfig', values);
+                  toast({
+                    title: 'Settings saved',
+                    description: 'Your PDF customization settings have been saved.',
+                  });
+                }}
+                initialValues={form.getValues('pdfConfig')}
+              />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 } 

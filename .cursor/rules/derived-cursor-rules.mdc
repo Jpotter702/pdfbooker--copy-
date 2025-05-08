@@ -1,0 +1,102 @@
+---
+description: AI rules derived by SpecStory from the project AI interaction history
+globs: *
+---
+
+## AI Coding Assistant Rules File
+
+This file defines all project rules, coding standards, workflow guidelines, references, documentation structures, and best practices for the AI coding assistant.  It is a living document and will be updated regularly.
+
+## TECH STACK
+
+* Python 3.9+
+* React 18+
+* Node.js 16+
+
+
+## PROJECT DOCUMENTATION & CONTEXT SYSTEM
+
+* All code must be well-commented.
+* Use clear and concise variable names.
+* Follow consistent indentation practices (4 spaces).
+* Maintain a detailed README.md file.
+* Version updates:  Incorporated UI/UX improvements from 2025-05-07_06-52-improving-ui-design.md interaction.  New dashboard design implemented (2025-05-07_06-52-improving-ui-design.md interaction).  Dashboard design reverted to previous version due to API integration.  New dashboard to be implemented incrementally, component by component. (2025-05-07_06-52-improving-ui-design.md interaction)
+* Resolved ChunkLoadError:  Loading chunk app/layout failed. (2025-05-07_06-52-improving-ui-design.md interaction - requires further investigation and fix).  Solution: Hard refresh browser (Ctrl+F5 or Cmd+Shift+R), clear browser cache for localhost:3001, restart Next.js dev server, delete `.next` directory and rebuild (rm -rf .next; npm run dev), check for build errors. (2025-05-07_06-52-improving-ui-design.md interaction)
+* Review requirements document:  docs/pdfbooker_requirements.md (2025-05-07_06-52-improving-ui-design.md interaction - requires review and potential updates to the rules file based on missing items).  Review complete.  Missing features identified and documented below.
+* Address high CPU usage during application startup: Investigate and resolve the issue causing high CPU usage and fan speed upon application launch. (2025-05-07_06-52-improving-ui-design.md interaction)  Solutions: Move or exclude large folders from project root. Add `.next`, `backup`, and other non-source folders to `.gitignore` and exclude from file watching. Restart dev server after making changes. Use the correct Node.js version. (2025-05-07_06-52-improving-ui-design.md interaction)
+* **All main content areas should be wrapped in a container with a maximum width (e.g., `max-w-2xl` or `max-w-3xl`) and centered using `mx-auto` to prevent excessive horizontal stretching and improve usability.**  This addresses issues identified in 2025-05-07_06-52-improving-ui-design.md interaction. (2025-05-07_06-52-improving-ui-design.md interaction)
+* **Main content areas (forms, steppers) must have a maximum width to prevent excessive horizontal stretching and improve usability.**  This addresses issues identified in 2025-05-07_06-52-improving-ui-design.md interaction and subsequent visual review.  Recommended max-widths include `max-w-2xl` or `max-w-3xl`.  These areas should be centered using `mx-auto`. (2025-05-07_06-52-improving-ui-design.md interaction)
+
+
+## CODING STANDARDS
+
+* Adhere to PEP 8 style guide for Python code.
+* Maintain consistent naming conventions throughout the project.
+* Prioritize code readability and maintainability.
+
+
+## WORKFLOW & RELEASE RULES
+
+* All code changes must be submitted via pull requests.
+* Pull requests must be reviewed by at least one other developer.
+* Thorough testing is required before merging any code changes.
+* Version control using Git.
+* UI updates should be implemented incrementally, potentially component by component, to avoid disrupting existing API integrations. (2025-05-07_06-52-improving-ui-design.md interaction)
+* New dashboard design will be implemented incrementally, component by component. (2025-05-07_06-52-improving-ui-design.md interaction)
+* Address high CPU usage during application startup: Investigate and resolve the issue causing high CPU usage and fan speed upon application launch. Solutions: Move or exclude large folders from project root. Add `.next`, `backup`, and other non-source folders to `.gitignore` and exclude from file watching. Restart dev server after making changes. Use the correct Node.js version. (2025-05-07_06-52-improving-ui-design.md interaction)
+
+
+## DEBUGGING
+
+* Utilize debugging tools effectively (print statements, debuggers).
+* Implement comprehensive logging.
+* Follow a systematic approach to debugging, isolating and resolving issues.
+* Address ChunkLoadError: Investigate and resolve the "Loading chunk app/layout failed" error. (2025-05-07_06-52-improving-ui-design.md interaction) Solutions: Hard refresh browser (Ctrl+F5 or Cmd+Shift+R), clear browser cache for localhost:3001, restart Next.js dev server, delete `.next` directory and rebuild (rm -rf .next; npm run dev), check for build errors. (2025-05-07_06-52-improving-ui-design.md interaction)
+* Address high CPU usage during application startup: Investigate and resolve the issue causing high CPU usage and fan speed upon application launch. Solutions: Move or exclude large folders from project root. Add `.next`, `backup`, and other non-source folders to `.gitignore` and exclude from file watching. Restart dev server after making changes. Use the correct Node.js version. (2025-05-07_06-52-improving-ui-design.md interaction)
+
+
+## UI/UX GUIDELINES
+
+* The UI should be visually appealing and user-friendly.
+* Button styling should incorporate modern design principles, including hover effects, shadows, and smooth transitions.  The `button.tsx` component should include `transition-all duration-200`, improved shadow effects on hover, and a subtle lift animation using `transform hover:-translate-y-0.5`.  The link variant should also include a subtle color fade on hover.  (2025-05-07_06-52-improving-ui-design.md interaction)
+* The `Card` component should include `max-w-full md:max-w-4xl mx-auto` to constrain width and center the card.  This change addresses the issue of card width requiring excessive zoom. (2025-05-07_06-52-improving-ui-design.md interaction)
+* New Dashboard Design: A new dashboard design is required, to be implemented incrementally to avoid API integration conflicts. (2025-05-07_06-52-improving-ui-design.md interaction). The new design should utilize a responsive grid layout (`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`), and a maximum container width (`max-w-7xl`).  The previous dashboard will be maintained until the new one is fully implemented. (2025-05-07_06-52-improving-ui-design.md interaction)  Reverted to previous dashboard design due to API integration. New design will be implemented incrementally, component by component. (2025-05-07_06-52-improving-ui-design.md interaction)
+* All main content areas should be wrapped in a container with a maximum width (e.g., `max-w-2xl` or `max-w-3xl`) and centered using `mx-auto` to prevent excessive horizontal stretching and improve usability.  This addresses issues identified in 2025-05-07_06-52-improving-ui-design.md interaction. (2025-05-07_06-52-improving-ui-design.md interaction)
+* Main content areas (forms, steppers) must have a maximum width to prevent excessive horizontal stretching and improve usability.  This addresses issues identified in 2025-05-07_06-52-improving-ui-design.md interaction and subsequent visual review.  Recommended max-widths include `max-w-2xl` or `max-w-3xl`.  These areas should be centered using `mx-auto`. (2025-05-07_06-52-improving-ui-design.md interaction)
+
+
+## MISSING FEATURES (from requirements review)
+
+Based on a review of `docs/pdfbooker_requirements.md` and the codebase, the following features are potentially missing or only partially implemented:
+
+**1. User Interface Requirements:**
+
+* **1.4 Post-Crawl Results and Chooser Dialog:** Visual drag-and-drop interface with thumbnails representing crawled pages is missing.  Current implementation only allows manual URL input.  This feature is not yet implemented.  This requirement is not met.  There is no UI for selecting from crawled results. There are no thumbnails or previews for the user to interact with. The current step is for manual URL entry only.
+* **1.5.1 PDF Preview Thumbnails (in Arranger):** Clickable preview thumbnails within the drag-and-drop arranger are missing. This requirement is missing. The UI does not provide clickable thumbnails or previews for each page in the drag-and-drop arranger.
+
+**2. Scraping and Processing Requirements (Server-Side):**
+
+* **2.2 Content Extraction (Readability Algorithms):** Requires verification that a readability library is used for content extraction. The `content-extractor.ts` uses Cheerio to parse HTML and extract content. It removes unwanted elements (ads, nav, footers, popups, etc.), extracts metadata, and tries to find the main content using common selectors (`article`, `main`, etc.). This is a basic readability/content extraction approach, but it does not use a dedicated readability algorithm/library (like Mozilla Readability.js). It may work for many sites, but will not be as robust as a full readability library.
+* **2.4 Link Resolution:** Requires verification that relative links are resolved to absolute links. All image and anchor URLs are resolved to absolute URLs using `new URL(src, baseUrl).href`. This requirement is met.
+* **2.6 Rate Limiting:** Requires verification of rate-limiting implementation. `rate-limiter.ts` enforces per-domain delays between requests. This requirement is met.
+* **2.7 Robots.txt Compliance:** Requires verification that the crawler respects robots.txt files. `robots-parser.ts` fetches and parses robots.txt, checks allowed/disallowed paths, and respects crawl-delay. This requirement is met.
+* **2.9 Content Cleaning (Ads, Nav, Footers):** Requires verification of server-side content cleaning logic. The extractor removes ads, navigation bars, footers, popups, and other non-essential elements. This requirement is met.
+* **2.10 Mobile Optimization Detection:** Requires verification that the crawler requests mobile versions of sites. Not explicitly implemented.
+
+
+**3. PDF Generation Requirements (Server-Side):**
+
+* **3.2 Table of Contents:** Requires verification that the server-side PDF generation logic creates the TOC. `generateTableOfContents` method in `pdf-generator.ts`. Implemented.
+* **3.3 Cover Page:** Requires verification that the server-side PDF generation logic creates the cover page. `generateCoverPage` method. Implemented.
+* **3.5 PDF Bookmarks:** Requires verification that the PDF generation library creates bookmarks. No explicit bookmark logic found; PDFKit supports this, but it’s not clear if it’s used. Not verified.
+* **3.7 Responsive Layouts (in PDF):** Requires verification of generated PDF quality across different content structures. Depends on PDFKit and content structure.
+* **3.9 Header/Footer Customization (May):** Requires implementation of header/footer content customization. Can show/hide headers/footers, but not fully customizable. Partially implemented.
+* **3.10 Watermarking (May):** Requires implementation of watermarking functionality. No watermark logic found. Missing.
+
+**4. System Requirements:**
+
+* **4.2 Concurrent Users:** Requires load testing or architectural review. Requires load testing or architectural review.
+* **4.4 Security (Malicious URL Inputs):** Requires verification of server-side input validation and security measures. Requires verification.
+* **4.5 API Access (Should):** Requires implementation of a publicly documented and versioned API for programmatic access. Internal APIs exist for frontend use, but no public, documented API for all features. Partially implemented.
+* **4.6 Export Options (EPUB, HTML - May):** Requires implementation of EPUB and HTML export options. Not present.
+* **4.8 Sharing (Link or Email - Should):** Requires implementation of functionality to share generated PDFs via link or email. No UI or backend logic for sharing PDFs via link or email. Missing.
